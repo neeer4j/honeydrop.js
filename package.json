@@ -1,0 +1,69 @@
+{
+  "name": "honeydrop",
+  "version": "1.0.0",
+  "description": "A lightweight, developer-friendly helper library for Socket.IO applications",
+  "main": "dist/honeydrop.cjs.js",
+  "module": "dist/honeydrop.esm.js",
+  "browser": "dist/honeydrop.umd.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/honeydrop.esm.js",
+      "require": "./dist/honeydrop.cjs.js",
+      "browser": "./dist/honeydrop.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "npm run build",
+    "demo": "cd demo && npm start"
+  },
+  "keywords": [
+    "socket.io",
+    "websocket",
+    "real-time",
+    "events",
+    "helper",
+    "utility",
+    "connection",
+    "reconnection"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neeer4j/honeydrop.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neeer4j/honeydrop.js/issues"
+  },
+  "homepage": "https://github.com/neeer4j/honeydrop.js#readme",
+  "peerDependencies": {
+    "socket.io-client": "^4.0.0 || ^5.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "rollup": "^4.9.6",
+    "rollup-plugin-dts": "^6.1.0",
+    "ts-jest": "^29.1.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

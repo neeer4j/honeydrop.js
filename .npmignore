@@ -1,0 +1,11 @@
+node_modules/
+src/
+*.ts
+tsconfig.json
+rollup.config.js
+.git/
+.gitignore
+demo/
+*.log
+.DS_Store
+coverage/

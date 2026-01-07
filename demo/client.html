@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Honeydrop Demo</title>
+  <style>
+    :root {
+      --primary: #FFC107;
+      --primary-dark: #FF9800;
+      --bg-dark: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-input: #0f3460;
+      --text: #eee;
+      --text-muted: #888;
+      --success: #4CAF50;
+      --error: #f44336;
+      --info: #2196F3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #0f0f23 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--error);
+      box-shadow: 0 0 10px var(--error);
+      transition: all 0.3s ease;
+    }
+
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .status-dot.reconnecting {
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .client-id {
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 500px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding-right: 10px;
+    }
+
+    .messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages::-webkit-scrollbar-track {
+      background: var(--bg-input);
+      border-radius: 3px;
+    }
+
+    .messages::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 3px;
+    }
+
+    .message {
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      background: var(--bg-input);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.own {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #000;
+      margin-left: 30px;
+    }
+
+    .message.system {
+      background: transparent;
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 0.8rem;
+    }
+
+    .message-from {
+      font-weight: bold;
+    }
+
+    .message-time {
+      color: var(--text-muted);
+    }
+
+    .message.own .message-time {
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .typing-indicator {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      height: 20px;
+      margin-bottom: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      background: var(--bg-input);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: box-shadow 0.3s ease;
+    }
+
+    input:focus {
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .users-list {
+      list-style: none;
+    }
+
+    .users-list li {
+      padding: 8px 12px;
+      margin-bottom: 5px;
+      border-radius: 6px;
+      background: var(--bg-input);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .users-list li::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .users-list li.you {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 152, 0, 0.2) 100%);
+      border: 1px solid var(--primary);
+    }
+
+    .log-container {
+      margin-top: 20px;
+    }
+
+    .log {
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      background: #000;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .log-entry {
+      margin-bottom: 5px;
+    }
+
+    .log-entry.debug { color: #9E9E9E; }
+    .log-entry.info { color: #2196F3; }
+    .log-entry.warn { color: #FF9800; }
+    .log-entry.error { color: #f44336; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .actions button {
+      flex: 1;
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+
+    .actions button.danger {
+      background: var(--error);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🍯 Honeydrop Demo</h1>
+      <p class="subtitle">Real-time Socket.IO communication made easy</p>
+    </header>
+
+    <div class="status-bar">
+      <div class="connection-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <div>
+        Your ID: <span class="client-id" id="clientId">—</span>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card chat-container">
+        <h2>💬 Chat</h2>
+        <div class="messages" id="messages"></div>
+        <div class="typing-indicator" id="typingIndicator"></div>
+        <div class="input-group">
+          <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+          <button id="sendBtn">Send</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>👥 Online Users</h2>
+          <ul class="users-list" id="usersList"></ul>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+          <h2>⚙️ Controls</h2>
+          <div class="actions">
+            <button id="reconnectBtn">Reconnect</button>
+            <button id="disconnectBtn" class="danger">Disconnect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card log-container">
+      <h2>📋 Debug Log</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script type="module">
+    // Import Honeydrop from the built dist folder
+    // In a real app, you'd use: import Honeydrop from 'honeydrop';
+    
+    // For demo, we'll create a simplified version that demonstrates the concepts
+    // The actual library would be imported after building
+
+    class DemoHoneydrop {
+      constructor(url, options = {}) {
+        this.url = url;
+        this.options = options;
+        this.socket = null;
+        this.listeners = new Map();
+        this.debug = options.debug || false;
+        this.reconnecting = false;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = options.reconnection?.maxAttempts || 5;
+        this.reconnectDelay = options.reconnection?.delay || 1000;
+        
+        if (options.autoConnect !== false) {
+          this.connect();
+        }
+      }
+
+      log(level, message, ...args) {
+        if (this.debug) {
+          const time = new Date().toISOString().split('T')[1].slice(0, -1);
+          console[level](`[Honeydrop] ${level.toUpperCase()} [${time}] ${message}`, ...args);
+          this.options.onLog?.(level, message, args);
+        }
+      }
+
+      connect() {
+        this.log('info', 'Connecting to', this.url);
+        
+        this.socket = io(this.url, {
+          reconnection: false, // We handle reconnection ourselves
+          ...this.options.socketOptions
+        });
+
+        this.socket.on('connect', () => {
+          this.log('info', '🟢 Connected');
+          if (this.reconnecting) {
+            this.reconnecting = false;
+            this.reconnectAttempts = 0;
+            this.options.reconnection?.onReconnected?.();
+          }
+          this.options.onConnect?.();
+        });
+
+        this.socket.on('disconnect', (reason) => {
+          this.log('info', '🔴 Disconnected:', reason);
+          this.options.onDisconnect?.(reason);
+          
+          if (reason !== 'io client disconnect' && this.options.reconnection?.enabled !== false) {
+            this.startReconnection();
+          }
+        });
+
+        this.socket.on('connect_error', (error) => {
+          this.log('error', 'Connection error:', error.message);
+          if (this.reconnecting) {
+            this.attemptReconnect();
+          }
+        });
+
+        return this.socket;
+      }
+
+      startReconnection() {
+        if (this.reconnecting) return;
+        this.reconnecting = true;
+        this.reconnectAttempts = 0;
+        this.attemptReconnect();
+      }
+
+      attemptReconnect() {
+        this.reconnectAttempts++;
+        
+        if (this.reconnectAttempts > this.maxReconnectAttempts) {
+          this.log('error', 'Max reconnection attempts reached');
+          this.reconnecting = false;
+          this.options.reconnection?.onFailed?.();
+          return;
+        }
+
+        const delay = this.options.reconnection?.strategy === 'exponential'
+          ? this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
+          : this.reconnectDelay;
+
+        this.log('info', `🟡 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+        this.options.reconnection?.onReconnecting?.(this.reconnectAttempts);
+
+        setTimeout(() => {
+          if (this.reconnecting) {
+            this.socket.connect();
+          }
+        }, delay);
+      }
+
+      disconnect() {
+        this.log('info', 'Disconnecting...');
+        this.reconnecting = false;
+        this.socket?.disconnect();
+      }
+
+      on(event, handler) {
+        this.socket?.on(event, handler);
+        
+        if (!this.listeners.has(event)) {
+          this.listeners.set(event, []);
+        }
+        this.listeners.get(event).push(handler);
+        
+        return this;
+      }
+
+      off(event, handler) {
+        this.socket?.off(event, handler);
+        return this;
+      }
+
+      emit(event, data) {
+        this.log('debug', `📤 Emit: ${event}`, data);
+        this.socket?.emit(event, data);
+        return this;
+      }
+
+      namespace(name, delimiter = ':') {
+        const self = this;
+        return {
+          on(event, handler) { self.on(`${name}${delimiter}${event}`, handler); return this; },
+          emit(event, data) { self.emit(`${name}${delimiter}${event}`, data); return this; },
+          off(event, handler) { self.off(`${name}${delimiter}${event}`, handler); return this; }
+        };
+      }
+
+      get connected() {
+        return this.socket?.connected ?? false;
+      }
+
+      get id() {
+        return this.socket?.id;
+      }
+
+      reconnect() {
+        this.disconnect();
+        setTimeout(() => this.connect(), 100);
+      }
+    }
+
+    // Initialize the app
+    const messagesEl = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const clientIdEl = document.getElementById('clientId');
+    const usersListEl = document.getElementById('usersList');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const logEl = document.getElementById('log');
+    const reconnectBtn = document.getElementById('reconnectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+
+    let myClientId = null;
+    let typingTimeout = null;
+
+    function addLog(level, message) {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${level}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function addMessage(from, text, isOwn = false, isSystem = false) {
+      const msg = document.createElement('div');
+      msg.className = `message ${isOwn ? 'own' : ''} ${isSystem ? 'system' : ''}`;
+      
+      if (isSystem) {
+        msg.textContent = text;
+      } else {
+        msg.innerHTML = `
+          <div class="message-header">
+            <span class="message-from">${isOwn ? 'You' : from}</span>
+            <span class="message-time">${new Date().toLocaleTimeString()}</span>
+          </div>
+          <div class="message-text">${text}</div>
+        `;
+      }
+      
+      messagesEl.appendChild(msg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function updateUsersList(users) {
+      usersListEl.innerHTML = users.map(user => `
+        <li class="${user === myClientId ? 'you' : ''}">${user}${user === myClientId ? ' (you)' : ''}</li>
+      `).join('');
+    }
+
+    function updateStatus(connected, reconnecting = false) {
+      statusDot.className = 'status-dot';
+      if (connected) {
+        statusDot.classList.add('connected');
+        statusText.textContent = 'Connected';
+      } else if (reconnecting) {
+        statusDot.classList.add('reconnecting');
+        statusText.textContent = 'Reconnecting...';
+      } else {
+        statusText.textContent = 'Disconnected';
+      }
+    }
+
+    // Create Honeydrop client
+    const client = new DemoHoneydrop('http://localhost:3000', {
+      debug: true,
+      reconnection: {
+        enabled: true,
+        maxAttempts: 5,
+        delay: 1000,
+        strategy: 'exponential',
+        onReconnecting: (attempt) => {
+          updateStatus(false, true);
+          addLog('info', `Reconnecting... (attempt ${attempt})`);
+        },
+        onReconnected: () => {
+          addLog('info', 'Reconnected successfully!');
+          addMessage(null, '🟢 Reconnected to server', false, true);
+        },
+        onFailed: () => {
+          addLog('error', 'Reconnection failed');
+          addMessage(null, '🔴 Could not reconnect to server', false, true);
+        }
+      },
+      onConnect: () => {
+        updateStatus(true);
+      },
+      onDisconnect: (reason) => {
+        updateStatus(false);
+        addMessage(null, `🔴 Disconnected: ${reason}`, false, true);
+      },
+      onLog: (level, message) => {
+        addLog(level, message);
+      }
+    });
+
+    // Set up namespaced chat events
+    const chat = client.namespace('chat');
+
+    // Event handlers
+    client.on('welcome', (data) => {
+      myClientId = data.clientId;
+      clientIdEl.textContent = myClientId;
+      addMessage(null, data.message, false, true);
+      updateUsersList(data.connectedClients);
+      addLog('info', `Welcome received: ${myClientId}`);
+    });
+
+    client.on('user:join', (data) => {
+      addMessage(null, `${data.clientId} joined the chat`, false, true);
+      updateUsersList(data.connectedClients);
+    });
+
+    client.on('user:leave', (data) => {
+      addMessage(null, `${data.clientId} left the chat`, false, true);
+      updateUsersList(data.connectedClients);
+    });
+
+    chat.on('message', (data) => {
+      addMessage(data.from, data.text, data.from === myClientId);
+    });
+
+    chat.on('typing', (data) => {
+      typingIndicator.textContent = `${data.clientId} is typing...`;
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        typingIndicator.textContent = '';
+      }, 2000);
+    });
+
+    chat.on('stopped-typing', () => {
+      typingIndicator.textContent = '';
+    });
+
+    // Send message
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !client.connected) return;
+
+      chat.emit('message', { text });
+      messageInput.value = '';
+      chat.emit('stopped-typing');
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    // Typing indicator
+    let isTyping = false;
+    messageInput.addEventListener('input', () => {
+      if (!isTyping && messageInput.value) {
+        isTyping = true;
+        chat.emit('typing');
+      }
+      
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        isTyping = false;
+        chat.emit('stopped-typing');
+      }, 1000);
+    });
+
+    // Control buttons
+    reconnectBtn.addEventListener('click', () => {
+      addLog('info', 'Manual reconnect triggered');
+      client.reconnect();
+    });
+
+    disconnectBtn.addEventListener('click', () => {
+      addLog('info', 'Manual disconnect triggered');
+      client.disconnect();
+    });
+
+    // Initial log
+    addLog('info', 'Honeydrop Demo initialized');
+  </script>
+</body>
+</html>
