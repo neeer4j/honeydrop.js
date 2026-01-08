@@ -24,6 +24,27 @@ export {
     NamespaceDelimiter
 } from './NamespacedEvents';
 
+// Offline queue
+export {
+    OfflineQueue,
+    OfflineQueueOptions,
+    QueuedEvent
+} from './OfflineQueue';
+
+// Connection monitor
+export {
+    ConnectionMonitor,
+    ConnectionMonitorOptions,
+    ConnectionQuality
+} from './ConnectionMonitor';
+
+// Room manager
+export {
+    RoomManager,
+    RoomManagerOptions,
+    RoomEmitter
+} from './RoomManager';
+
 // Logging
 export { Logger, LogLevel } from './logger';
 

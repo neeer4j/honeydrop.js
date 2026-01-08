@@ -6,6 +6,10 @@
 
 A lightweight, developer-friendly helper library for Socket.IO applications. Simplifies real-time communication in web apps with easy connection management, automatic reconnection, and powerful utilities.
 
+## 💡 Why Honeydrop?
+
+I was working on a real-time project using Socket.IO myself and realized how much repetitive work was involved — managing rooms, handling reconnections, queuing events while offline, and retrying failed emits. That's why I decided to create **Honeydrop.js**, a lightweight, developer-friendly library that simplifies real-time communication and makes building robust Socket.IO apps faster and easier.
+
 ## ✨ Features
 
 - 🔌 **Easy Connection Management** - Simple API to connect, disconnect, and manage Socket.IO connections
@@ -65,6 +69,9 @@ new Honeydrop(url, options?)
 | `autoConnect` | `boolean` | `true` | Auto-connect on instantiation |
 | `namespaceDelimiter` | `':' \| '/' \| '.' \| '_'` | `':'` | Delimiter for namespaced events |
 | `reconnection` | `ReconnectionOptions` | — | Reconnection configuration |
+| `offlineQueue` | `OfflineQueueOptions` | `{ enabled: true }` | Offline message queue configuration |
+| `connectionMonitor` | `ConnectionMonitorOptions` | `{ enabled: true }` | Connection health monitoring |
+| `roomManager` | `RoomManagerOptions` | — | Room join/leave event names |
 | `socketOptions` | `object` | — | Socket.IO client options |
 
 #### Reconnection Options
@@ -81,6 +88,20 @@ new Honeydrop(url, options?)
   onFailed: () => {}                // Called when max attempts reached
 }
 ```
+
+#### Offline Queue Options
+
+```javascript
+{
+  enabled: true,          // Enable offline queueing (default: true)
+  maxSize: 100,           // Maximum events to queue (0 = unlimited)
+  maxAge: 0,              // Max age in ms before discard (0 = no expiry)
+  onQueued: (event) => {},    // Called when event is queued
+  onFlushed: (count) => {},   // Called when queue is flushed on reconnect
+  onDropped: (event) => {}    // Called when event is dropped (queue full)
+}
+```
+
 
 ### Connection Methods
 
@@ -147,6 +168,36 @@ const responses = await client.emitMultipleWithAck([
   { event: 'validate', data: input1 },
   { event: 'validate', data: input2, timeout: 3000 }
 ]);
+
+// Request/Response (RPC pattern)
+const user = await client.request('getUser', { id: 123 });
+// Server should emit 'getUser:response' with the result
+
+// Emit with automatic retry
+const result = await client.emitWithRetry('criticalAction', data, {
+  maxRetries: 3,
+  retryDelay: 1000,
+  onRetry: (attempt, error) => console.log(`Retry ${attempt}`)
+});
+```
+
+### Room Management
+
+```javascript
+// Join a room
+client.join('room-1');
+
+// Leave a room
+client.leave('room-1');
+
+// Emit to a specific room
+client.toRoom('room-1').emit('message', { text: 'Hello room!' });
+
+// Get joined rooms
+console.log(client.getRooms()); // ['room-1']
+
+// Check if in a room
+console.log(client.isInRoom('room-1')); // true
 ```
 
 ### Waiting for Events
@@ -190,6 +241,43 @@ throttledUpdate({ x: 100, y: 200 });
 const debouncedSearch = client.debounce('search', 300);
 // Only emits after 300ms of no calls
 debouncedSearch({ query: 'hello' });
+```
+
+### Offline Queue
+
+Events are automatically queued when disconnected and sent when reconnected:
+
+```javascript
+// Events emitted while offline are queued automatically
+client.emit('message', { text: 'Hello' }); // Queued if offline
+
+// Check queue status
+console.log(client.getQueueLength()); // Number of queued events
+console.log(client.getQueuedEvents()); // Array of queued events
+
+// Clear the queue
+client.clearQueue();
+
+// Disable/enable offline queueing
+client.setOfflineQueue(false);
+```
+
+### Connection Health
+
+Monitor connection latency and quality:
+
+```javascript
+// Perform a ping and get latency
+const latency = await client.ping(); // Returns latency in ms
+
+// Get average latency
+console.log(client.getLatency()); // Average latency in ms
+
+// Get connection quality
+console.log(client.getConnectionQuality()); // 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected'
+
+// Disable/enable monitoring
+client.setConnectionMonitoring(false);
 ```
 
 ### Debugging

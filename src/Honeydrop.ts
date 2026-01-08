@@ -8,6 +8,9 @@ import { Logger, LogLevel } from './logger';
 import { EventManager } from './EventManager';
 import { ReconnectionHandler, ReconnectionOptions } from './ReconnectionHandler';
 import { NamespacedEvents, NamespaceOptions, NamespaceDelimiter } from './NamespacedEvents';
+import { OfflineQueue, OfflineQueueOptions } from './OfflineQueue';
+import { ConnectionMonitor, ConnectionMonitorOptions, ConnectionQuality } from './ConnectionMonitor';
+import { RoomManager, RoomManagerOptions, RoomEmitter } from './RoomManager';
 import {
     emitMultiple,
     emitMultipleWithAck,
@@ -29,6 +32,12 @@ export interface HoneydropOptions {
     logLevel?: LogLevel;
     /** Reconnection configuration */
     reconnection?: ReconnectionOptions;
+    /** Offline queue configuration */
+    offlineQueue?: OfflineQueueOptions;
+    /** Connection monitor configuration */
+    connectionMonitor?: ConnectionMonitorOptions;
+    /** Room manager configuration */
+    roomManager?: RoomManagerOptions;
     /** Default namespace delimiter */
     namespaceDelimiter?: NamespaceDelimiter;
     /** Socket.IO client options */
@@ -51,6 +60,9 @@ export class Honeydrop {
     private logger: Logger;
     private eventManager: EventManager;
     private reconnectionHandler: ReconnectionHandler | null = null;
+    private offlineQueue: OfflineQueue;
+    private connectionMonitor: ConnectionMonitor;
+    private roomManager: RoomManager;
     private namespaces: Map<string, NamespacedEvents> = new Map();
 
     constructor(url: string, options: HoneydropOptions = {}) {
@@ -65,6 +77,15 @@ export class Honeydrop {
 
         // Initialize event manager
         this.eventManager = new EventManager(this.logger);
+
+        // Initialize offline queue
+        this.offlineQueue = new OfflineQueue(this.options.offlineQueue ?? {}, this.logger);
+
+        // Initialize connection monitor
+        this.connectionMonitor = new ConnectionMonitor(this.options.connectionMonitor ?? {}, this.logger);
+
+        // Initialize room manager
+        this.roomManager = new RoomManager(this.options.roomManager ?? {}, this.logger);
 
         // Initialize reconnection handler if enabled
         if (this.options.reconnection?.enabled !== false) {
@@ -97,6 +118,9 @@ export class Honeydrop {
 
         this.socket = io(this.url, socketOptions);
         this.eventManager.setSocket(this.socket);
+        this.offlineQueue.setSocket(this.socket);
+        this.connectionMonitor.setSocket(this.socket);
+        this.roomManager.setSocket(this.socket);
 
         if (this.reconnectionHandler) {
             this.reconnectionHandler.setSocket(this.socket);
@@ -113,6 +137,7 @@ export class Honeydrop {
 
         this.eventManager.removeAllListeners();
         this.reconnectionHandler?.stop();
+        this.connectionMonitor.stop();
         this.socket.disconnect();
         this.logger.connection('disconnected');
     }
@@ -143,16 +168,24 @@ export class Honeydrop {
 
     /**
      * Emit an event
+     * If disconnected and offline queue is enabled, the event will be queued
      */
     emit(event: string, ...args: unknown[]): this {
         if (!this.socket) {
             throw new Error('Socket not initialized. Call connect() first.');
         }
 
+        // Queue if disconnected
+        if (!this.socket.connected && this.offlineQueue.enabled) {
+            this.offlineQueue.enqueue(event, ...args);
+            return this;
+        }
+
         this.logger.emit(event, args.length === 1 ? args[0] : args);
         this.socket.emit(event, ...args);
         return this;
     }
+
 
     /**
      * Emit multiple events at once
@@ -175,6 +208,91 @@ export class Honeydrop {
         }
 
         return emitWithAck(this.socket, event, data, timeout);
+    }
+
+    /**
+     * Request/Response pattern (RPC-style)
+     * Emits an event and waits for a response event
+     * @param event - Event to emit
+     * @param data - Data to send
+     * @param options - Request options
+     */
+    async request<T = unknown>(
+        event: string,
+        data?: unknown,
+        options: { timeout?: number; responseEvent?: string } = {}
+    ): Promise<T> {
+        if (!this.socket) {
+            throw new Error('Socket not initialized. Call connect() first.');
+        }
+
+        const timeout = options.timeout ?? 5000;
+        const responseEvent = options.responseEvent ?? `${event}:response`;
+
+        return new Promise<T>((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.socket?.off(responseEvent, handler);
+                reject(new Error(`Request timeout: ${event} (${timeout}ms)`));
+            }, timeout);
+
+            const handler = (response: T) => {
+                clearTimeout(timer);
+                resolve(response);
+            };
+
+            this.socket!.once(responseEvent, handler);
+            this.logger.emit(event, data);
+
+            if (data !== undefined) {
+                this.socket!.emit(event, data);
+            } else {
+                this.socket!.emit(event);
+            }
+        });
+    }
+
+    /**
+     * Emit with automatic retry on failure
+     * @param event - Event to emit
+     * @param data - Data to send
+     * @param options - Retry options
+     */
+    async emitWithRetry(
+        event: string,
+        data?: unknown,
+        options: {
+            maxRetries?: number;
+            retryDelay?: number;
+            timeout?: number;
+            onRetry?: (attempt: number, error: Error) => void;
+        } = {}
+    ): Promise<unknown> {
+        if (!this.socket) {
+            throw new Error('Socket not initialized. Call connect() first.');
+        }
+
+        const maxRetries = options.maxRetries ?? 3;
+        const retryDelay = options.retryDelay ?? 1000;
+        const timeout = options.timeout ?? 5000;
+
+        let lastError: Error = new Error('Unknown error');
+
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const result = await emitWithAck(this.socket, event, data, timeout);
+                return result;
+            } catch (error) {
+                lastError = error instanceof Error ? error : new Error(String(error));
+                this.logger.warn(`Emit failed (attempt ${attempt}/${maxRetries}): ${event}`);
+                options.onRetry?.(attempt, lastError);
+
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                }
+            }
+        }
+
+        throw new Error(`Emit failed after ${maxRetries} attempts: ${event}. Last error: ${lastError.message}`);
     }
 
     /**
@@ -339,5 +457,101 @@ export class Honeydrop {
     setLogLevel(level: LogLevel): this {
         this.logger.setLevel(level);
         return this;
+    }
+
+    /**
+     * Get the number of queued events (when offline)
+     */
+    getQueueLength(): number {
+        return this.offlineQueue.length;
+    }
+
+    /**
+     * Get all queued events (read-only)
+     */
+    getQueuedEvents(): readonly { event: string; args: unknown[]; timestamp: number }[] {
+        return this.offlineQueue.getQueue();
+    }
+
+    /**
+     * Clear the offline queue
+     */
+    clearQueue(): this {
+        this.offlineQueue.clear();
+        return this;
+    }
+
+    /**
+     * Enable or disable offline queueing
+     */
+    setOfflineQueue(enabled: boolean): this {
+        this.offlineQueue.setEnabled(enabled);
+        return this;
+    }
+
+    /**
+     * Ping the server and get latency
+     */
+    async ping(): Promise<number> {
+        return this.connectionMonitor.ping();
+    }
+
+    /**
+     * Get average latency to server
+     */
+    getLatency(): number {
+        return this.connectionMonitor.getAverageLatency();
+    }
+
+    /**
+     * Get current connection quality
+     */
+    getConnectionQuality(): ConnectionQuality {
+        return this.connectionMonitor.getQuality();
+    }
+
+    /**
+     * Enable or disable connection monitoring
+     */
+    setConnectionMonitoring(enabled: boolean): this {
+        this.connectionMonitor.setEnabled(enabled);
+        return this;
+    }
+
+    /**
+     * Join a room
+     */
+    join(room: string, data?: unknown): this {
+        this.roomManager.join(room, data);
+        return this;
+    }
+
+    /**
+     * Leave a room
+     */
+    leave(room: string, data?: unknown): this {
+        this.roomManager.leave(room, data);
+        return this;
+    }
+
+    /**
+     * Create a room-scoped emitter
+     */
+    toRoom(room: string): RoomEmitter {
+        return this.roomManager.toRoom(room);
+    }
+
+    /**
+     * Get list of joined rooms
+     */
+    getRooms(): string[] {
+        return this.roomManager.getRooms();
+    }
+
+    /**
+     * Check if in a specific room
+     */
+    isInRoom(room: string): boolean {
+        return this.roomManager.isInRoom(room);
     }
 }
