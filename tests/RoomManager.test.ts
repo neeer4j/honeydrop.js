@@ -1,6 +1,6 @@
 import { RoomManager } from '../src/RoomManager';
 import { MockSocket, MockLogger } from './setup';
-import { jest } from '@jest/globals';
+import { test, expect, beforeEach } from 'tesht.js';
 
 describe('RoomManager', () => {
     let manager: RoomManager;
@@ -45,3 +45,6 @@ describe('RoomManager', () => {
         expect(manager.getRooms().length).toBe(0);
     });
 });
+
+// Shim describe
+function describe(name: string, fn: () => void) { fn(); }

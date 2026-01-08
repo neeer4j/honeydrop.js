@@ -22,8 +22,8 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "npx tsx node_modules/tesht.js/bin/tesht.js tests/",
+    "test:watch": "npx tsx node_modules/tesht.js/bin/tesht.js tests/ --watch",
     "prepublishOnly": "npm run build",
     "demo": "cd demo && npm start"
   },
@@ -61,12 +61,11 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@types/jest": "^29.5.14",
-    "jest": "^29.7.0",
     "rollup": "^4.9.6",
     "rollup-plugin-dts": "^6.1.0",
-    "ts-jest": "^29.4.6",
+    "tesht.js": "^1.1.0",
     "tslib": "^2.6.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "engines": {

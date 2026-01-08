@@ -1,11 +1,12 @@
-import { jest } from '@jest/globals';
 
-// Mock Socket.IO client class
+// Mock Socket.IO client class for Tesht
+import { fn } from 'tesht.js';
+
 export class MockSocket {
     public id: string = 'mock-socket-id';
     public connected: boolean = true;
     public callbacks: Record<string, Function[]> = {};
-    public emitSpy = jest.fn();
+    public emitSpy = fn();
 
     on(event: string, callback: Function) {
         if (!this.callbacks[event]) {
@@ -64,12 +65,12 @@ export class MockSocket {
 
 // Mock Logger
 export class MockLogger {
-    public debug = jest.fn();
-    public info = jest.fn();
-    public warn = jest.fn();
-    public error = jest.fn();
-    public emit = jest.fn();
-    public connection = jest.fn();
-    public setEnabled = jest.fn();
-    public setLevel = jest.fn();
+    public debug = fn();
+    public info = fn();
+    public warn = fn();
+    public error = fn();
+    public emit = fn();
+    public connection = fn();
+    public setEnabled = fn();
+    public setLevel = fn();
 }
