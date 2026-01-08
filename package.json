@@ -1,6 +1,6 @@
 {
   "name": "honeydrop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight, developer-friendly helper library for Socket.IO applications",
   "main": "dist/honeydrop.cjs.js",
   "module": "dist/honeydrop.esm.js",
