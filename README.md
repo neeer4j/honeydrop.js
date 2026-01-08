@@ -196,4 +196,10 @@ npm start
 
 ## 📄 License
 
-MIT © 2024 Neeraj
+MIT License © 2024 Neeraj
+
+<br>
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/neeer4j">neeer4j</a>
+</p>
