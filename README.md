@@ -1,298 +1,192 @@
+<div align="center">
+
 # Honeydrop 🍯
 
-[![npm version](https://img.shields.io/npm/v/honeydrop.svg)](https://www.npmjs.com/package/honeydrop)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org)
+### The Developer-Friendly Socket.IO Helper
 
-A lightweight, developer-friendly helper library for Socket.IO applications. Simplifies real-time communication in web apps with easy connection management, automatic reconnection, and powerful utilities.
+[![npm version](https://img.shields.io/npm/v/honeydrop.svg?style=flat-square)](https://www.npmjs.com/package/honeydrop)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg?style=flat-square)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg?style=flat-square)](https://www.typescriptlang.org/)
 
-## 💡 Why Honeydrop?
+**Simplify your real-time applications.**<br>
+Effortless connection management, automatic reconnection, and powerful utilities for Socket.IO.
 
-I was working on a real-time project using Socket.IO myself and realized how much repetitive work was involved — managing rooms, handling reconnections, queuing events while offline, and retrying failed emits. That's why I decided to create **Honeydrop.js**, a lightweight, developer-friendly library that simplifies real-time communication and makes building robust Socket.IO apps faster and easier.
+[Installation](#-installation) • [Quick Start](#-quick-start) • [Features](#-features) • [API Reference](#-api-reference) • [Contributing](#-contributing)
+
+</div>
+
+---
+
+## 💡 Motivation
+
+Building robust Socket.IO applications often involves repetitive boilerplate: managing room joins, handling reconnections gracefully, queuing events when the network drops, and implementing retry logic. 
+
+**Honeydrop** handles this complexity for you. It wraps the standard `socket.io-client` with a powerful, developer-friendly API that makes your real-time code cleaner, more reliable, and easier to maintain.
 
 ## ✨ Features
 
-- 🔌 **Easy Connection Management** - Simple API to connect, disconnect, and manage Socket.IO connections
-- 🎯 **Event Handling with Auto-Cleanup** - Register events that are automatically cleaned up on disconnect
-- 🔄 **Automatic Reconnection** - Configurable retry strategies (linear/exponential backoff)
-- 📛 **Namespaced Events** - Organize events into logical channels
-- ⚡ **Utility Functions** - Multi-emit, multi-listen, throttle, debounce, and more
-- 🐛 **Debug Logging** - Pretty-printed development logs
-- 📦 **Lightweight** - No bundled dependencies, Socket.IO as peer dependency
-- 🎨 **TypeScript Support** - Full type definitions included
+- **🔌 effortless Connection Management**: Simple API to connect, disconnect, and monitor health.
+- **🎯 Smart Event Handling**: Auto-cleanup of listeners on disconnect.
+- **🔄 Robust Reconnection**: Configurable strategies (linear/exponential backoff) with hooks.
+- **📛 Namespacing Made Easy**: Organize your events into logical channels (`chat:message`, `game:score`).
+- **⚡ Powerful Utilities**: Multi-emit, multi-listen, throttle, debounce, and specific event waiting.
+- **📦 Offline Queue**: Automatically queue events when disconnected and flush them on reconnect.
+- **🐛 Dev-Friendly**: Built-in debug logging and full TypeScript support.
 
 ## 📦 Installation
 
-```bash
-npm install honeydrop socket.io-client
-```
+> [!IMPORTANT]
+> Run the following command to install the package:
+> ```bash
+> npm install honeydrop
+> ```
+> *Note: `socket.io-client` is a peer dependency and will be installed if not present.*
 
 ## 🚀 Quick Start
 
-```javascript
+Here's how easy it is to get started:
+
+```typescript
 import Honeydrop from 'honeydrop';
 
-// Create a client with auto-connect
+// 1. Initialize the client
 const client = new Honeydrop('http://localhost:3000', {
-  debug: true,
-  reconnection: {
-    enabled: true,
-    maxAttempts: 5,
-    strategy: 'exponential'
-  }
+  autoConnect: true,
+  debug: true
 });
 
-// Listen for events
+// 2. Listen for events
 client.on('message', (data) => {
   console.log('Received:', data);
 });
 
-// Emit events
+// 3. Emit events (even if currently disconnected!)
 client.emit('chat:message', { text: 'Hello, World!' });
 
-// Disconnect (all listeners automatically cleaned up)
-client.disconnect();
+// 4. Cleanup when done
+// client.disconnect();
 ```
 
 ## 📖 API Reference
 
-### Constructor
+### Client Configuration
 
 ```javascript
-new Honeydrop(url, options?)
+new Honeydrop(url, {
+  debug: false,               // Enable debug logs
+  autoConnect: true,          // Connect immediately
+  reconnection: {             // Reconnection strategy
+    enabled: true,
+    maxAttempts: 10,
+    strategy: 'exponential'   // 'linear' | 'exponential'
+  },
+  offlineQueue: {             // Offline behavior
+    enabled: true,
+    maxSize: 100
+  }
+})
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `debug` | `boolean` | `false` | Enable debug logging |
-| `logLevel` | `'debug' \| 'info' \| 'warn' \| 'error'` | `'info'` | Minimum log level |
-| `autoConnect` | `boolean` | `true` | Auto-connect on instantiation |
-| `namespaceDelimiter` | `':' \| '/' \| '.' \| '_'` | `':'` | Delimiter for namespaced events |
-| `reconnection` | `ReconnectionOptions` | — | Reconnection configuration |
-| `offlineQueue` | `OfflineQueueOptions` | `{ enabled: true }` | Offline message queue configuration |
-| `connectionMonitor` | `ConnectionMonitorOptions` | `{ enabled: true }` | Connection health monitoring |
-| `roomManager` | `RoomManagerOptions` | — | Room join/leave event names |
-| `socketOptions` | `object` | — | Socket.IO client options |
+### Core Methods
 
-#### Reconnection Options
-
-```javascript
-{
-  enabled: true,          // Enable auto-reconnection
-  maxAttempts: 10,        // Maximum retry attempts
-  delay: 1000,            // Initial delay (ms)
-  maxDelay: 30000,        // Maximum delay (ms)
-  strategy: 'exponential', // 'linear' or 'exponential'
-  onReconnecting: (attempt) => {},  // Called on each attempt
-  onReconnected: () => {},          // Called on success
-  onFailed: () => {}                // Called when max attempts reached
-}
-```
-
-#### Offline Queue Options
-
-```javascript
-{
-  enabled: true,          // Enable offline queueing (default: true)
-  maxSize: 100,           // Maximum events to queue (0 = unlimited)
-  maxAge: 0,              // Max age in ms before discard (0 = no expiry)
-  onQueued: (event) => {},    // Called when event is queued
-  onFlushed: (count) => {},   // Called when queue is flushed on reconnect
-  onDropped: (event) => {}    // Called when event is dropped (queue full)
-}
-```
-
-
-### Connection Methods
-
-```javascript
-// Connect to server
-client.connect();
-
-// Disconnect and cleanup
-client.disconnect();
-
-// Check connection status
-client.connected; // boolean
-client.id;        // socket ID
-
-// Get detailed connection info
-client.getConnectionInfo();
-// { connected: boolean, id: string | null, transport: string | null }
-
-// Manual reconnection
-client.reconnect();
-```
+| Method | Description |
+|--------|-------------|
+| `connect()` | Manually connect to the server. |
+| `disconnect()` | Disconnect and clean up all listeners. |
+| `reconnect()` | Force a manual reconnection attempt. |
+| `setDebug(bool)` | Toggle debug logging at runtime. |
 
 ### Event Handling
 
-```javascript
-// Register event listener
-client.on('event', (data) => { /* ... */ });
+Honeydrop provides a rich API for event management:
+
+```typescript
+// Standard listener
+client.on('user:login', (user) => console.log(user));
 
 // One-time listener
-client.once('event', (data) => { /* ... */ });
+client.once('init', () => console.log('Initialized'));
 
-// Remove listener
-client.off('event', handler);
-client.off('event'); // Remove all listeners for event
+// Remove listeners
+client.off('user:login');
 
-// Listen to multiple events
-client.onMultiple(['user:join', 'user:leave'], (event, data) => {
-  console.log(`${event}:`, data);
-});
+// Listen to MULTIPLE events with one handler
+client.onMultiple(['connect', 'reconnect'], () => updateStatus('online'));
 
-// Fire once on any of the events
-client.onceAny(['success', 'error'], (event, data) => {
-  console.log(`Got ${event}:`, data);
-});
+// Wait for a specific event (Promise-based)
+const data = await client.waitFor('ready', 5000);
 ```
 
 ### Emitting Events
 
-```javascript
-// Basic emit
-client.emit('event', data);
+Send data with confidence using advanced emit patterns:
 
-// Emit multiple events
-client.emitMultiple([
-  { event: 'init', data: { userId: 1 } },
-  { event: 'status', data: { online: true } }
-]);
+```typescript
+// Standard emit
+client.emit('update', data);
 
-// Emit with acknowledgment
-const response = await client.emitWithAck('request', data, 5000);
+// Emit with Acknowledgment (Async/Await)
+try {
+  const response = await client.emitWithAck('createUser', userData, 5000);
+} catch (err) {
+  console.error('Server did not acknowledge in time');
+}
 
-// Emit multiple with acknowledgment
-const responses = await client.emitMultipleWithAck([
-  { event: 'validate', data: input1 },
-  { event: 'validate', data: input2, timeout: 3000 }
-]);
-
-// Request/Response (RPC pattern)
-const user = await client.request('getUser', { id: 123 });
-// Server should emit 'getUser:response' with the result
-
-// Emit with automatic retry
-const result = await client.emitWithRetry('criticalAction', data, {
+// Emit with Automatic Retry
+// Great for critical actions that must reach the server
+await client.emitWithRetry('saveData', payload, {
   maxRetries: 3,
-  retryDelay: 1000,
-  onRetry: (attempt, error) => console.log(`Retry ${attempt}`)
+  retryDelay: 1000
 });
+
+// Throttled Emit (e.g., for mouse movement or window resize)
+const updatePosition = client.throttle('cursor:move', 100);
+updatePosition({ x: 10, y: 20 });
+```
+
+### Namespaces
+
+Organize your events into logical groups without creating multiple socket connections.
+
+```typescript
+const chat = client.namespace('chat'); // prefixes events with 'chat:'
+
+chat.emit('msg', 'hello');       // Emits 'chat:msg'
+chat.on('typing', showTyping);   // Listens for 'chat:typing'
 ```
 
 ### Room Management
 
-```javascript
-// Join a room
-client.join('room-1');
+Helper methods for room-based logic (requires server-side support for room events).
 
-// Leave a room
-client.leave('room-1');
-
-// Emit to a specific room
-client.toRoom('room-1').emit('message', { text: 'Hello room!' });
-
-// Get joined rooms
-console.log(client.getRooms()); // ['room-1']
-
-// Check if in a room
-console.log(client.isInRoom('room-1')); // true
+```typescript
+client.join('room-123');
+client.toRoom('room-123').emit('announcement', 'Welcome!');
+const inRoom = client.isInRoom('room-123'); // true
 ```
 
-### Waiting for Events
+## 🌐 Browser Support
 
+Honeydrop works seamlessly in both Node.js and the Browser.
+
+### Using with Bundlers (Vite, Webpack, etc.)
 ```javascript
-// Wait for a specific event
-const data = await client.waitFor('ready', 5000);
-
-// Wait for any of the events
-const { event, data } = await client.waitForAny(['success', 'error']);
+import Honeydrop from 'honeydrop';
 ```
 
-### Namespaced Events
-
-```javascript
-// Create a namespace
-const chat = client.namespace('chat');
-
-// All events are prefixed with 'chat:'
-chat.on('message', handler);  // Listens to 'chat:message'
-chat.emit('message', data);   // Emits 'chat:message'
-
-// Create sub-namespaces
-const room = chat.sub('room1');
-room.emit('join');  // Emits 'chat:room1:join'
-
-// Custom delimiter
-const api = client.namespace('api', { delimiter: '/' });
-api.emit('users', query);  // Emits 'api/users'
+### Using via CDN
+```html
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="https://unpkg.com/honeydrop/dist/honeydrop.umd.js"></script>
+<script>
+  const client = new Honeydrop.Honeydrop('http://localhost:3000');
+</script>
 ```
 
-### Throttle & Debounce
+## 🤝 Contributing
 
-```javascript
-// Throttled emit (max once per interval)
-const throttledUpdate = client.throttle('position', 100);
-// Call as often as you want, emits max 10 times/sec
-throttledUpdate({ x: 100, y: 200 });
-
-// Debounced emit (waits for pause in calls)
-const debouncedSearch = client.debounce('search', 300);
-// Only emits after 300ms of no calls
-debouncedSearch({ query: 'hello' });
-```
-
-### Offline Queue
-
-Events are automatically queued when disconnected and sent when reconnected:
-
-```javascript
-// Events emitted while offline are queued automatically
-client.emit('message', { text: 'Hello' }); // Queued if offline
-
-// Check queue status
-console.log(client.getQueueLength()); // Number of queued events
-console.log(client.getQueuedEvents()); // Array of queued events
-
-// Clear the queue
-client.clearQueue();
-
-// Disable/enable offline queueing
-client.setOfflineQueue(false);
-```
-
-### Connection Health
-
-Monitor connection latency and quality:
-
-```javascript
-// Perform a ping and get latency
-const latency = await client.ping(); // Returns latency in ms
-
-// Get average latency
-console.log(client.getLatency()); // Average latency in ms
-
-// Get connection quality
-console.log(client.getConnectionQuality()); // 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected'
-
-// Disable/enable monitoring
-client.setConnectionMonitoring(false);
-```
-
-### Debugging
-
-```javascript
-// Enable/disable debug mode
-client.setDebug(true);
-
-// Set log level
-client.setLogLevel('debug'); // 'debug' | 'info' | 'warn' | 'error'
-```
-
-## 🎮 Demo
-
-Run the included demo to see Honeydrop in action:
+We welcome contributions! Please feel free to verify the correctness of your changes by running the demo app:
 
 ```bash
 cd demo
@@ -300,26 +194,6 @@ npm install
 npm start
 ```
 
-Then open `http://localhost:3000` in multiple browser tabs to test real-time communication.
-
-## 🌐 Browser Usage
-
-### With Bundler (Webpack, Vite, etc.)
-
-```javascript
-import Honeydrop from 'honeydrop';
-```
-
-### Via Script Tag
-
-```html
-<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
-<script src="path/to/honeydrop.umd.js"></script>
-<script>
-  const client = new Honeydrop.Honeydrop('http://localhost:3000');
-</script>
-```
-
 ## 📄 License
 
-MIT © 2024
+MIT © 2024 Neeraj
