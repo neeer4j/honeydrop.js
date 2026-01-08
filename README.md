@@ -166,6 +166,62 @@ client.toRoom('room-123').emit('announcement', 'Welcome!');
 const inRoom = client.isInRoom('room-123'); // true
 ```
 
+## ⚛️ Using with React
+
+Honeydrop provides first-class support for React with powerful hooks that handle lifecycle and cleanup for you.
+
+### Setup Provider
+
+Wrap your app in the `HoneydropProvider` to make the client available throughout your component tree.
+
+```tsx
+import { Honeydrop, HoneydropProvider } from 'honeydrop';
+
+const client = new Honeydrop('http://localhost:3000');
+
+function App() {
+  return (
+    <HoneydropProvider client={client}>
+      <Dashboard />
+    </HoneydropProvider>
+  );
+}
+```
+
+### Hooks API
+
+#### useSocketEvent
+Listens for an event and automatically removes the listener when the component unmounts. No more `useEffect` boilerplate!
+
+```tsx
+import { useSocketEvent } from 'honeydrop';
+
+function LiveCounter() {
+  // Listen for 'count:update' event
+  useSocketEvent('count:update', (count) => {
+    console.log('New count:', count);
+  });
+
+  return <div>Check console for updates</div>;
+}
+```
+
+#### useSocketStatus
+Easily track your connection status to show loading spinners or offline badges.
+
+```tsx
+import { useSocketStatus } from 'honeydrop';
+
+function ConnectionBadge() {
+  const status = useSocketStatus(); // 'connected' | 'disconnected' | 'connecting'
+
+  if (status === 'disconnected') {
+    return <span style={{ color: 'red' }}>Offline</span>;
+  }
+  return <span style={{ color: 'green' }}>Online</span>;
+}
+```
+
 ## 🌐 Browser Support
 
 Honeydrop works seamlessly in both Node.js and the Browser.

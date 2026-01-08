@@ -63,6 +63,16 @@ export {
     EmitWithAckItem
 } from './utils';
 
+// React Hooks & Context
+export {
+    HoneydropProvider,
+    HoneydropProviderProps,
+    useHoneydrop
+} from './react/HoneydropContext';
+
+export { useSocketEvent } from './react/useSocketEvent';
+export { useSocketStatus, ConnectionStatus } from './react/useSocketStatus';
+
 // Default export
 import { Honeydrop } from './Honeydrop';
 export default Honeydrop;
