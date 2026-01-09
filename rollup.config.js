@@ -28,11 +28,12 @@ export default [
                 name: 'Honeydrop',
                 sourcemap: true,
                 globals: {
-                    'socket.io-client': 'io'
+                    'socket.io-client': 'io',
+                    'react': 'React'
                 }
             }
         ],
-        external: ['socket.io-client'],
+        external: ['socket.io-client', 'react'],
         plugins: [
             resolve({
                 browser: true
@@ -53,6 +54,6 @@ export default [
             format: 'esm'
         },
         plugins: [dts()],
-        external: ['socket.io-client']
+        external: ['socket.io-client', 'react']
     }
 ];
