@@ -26,12 +26,15 @@ Building robust Socket.IO applications often involves repetitive boilerplate: ma
 
 ## ✨ Features
 
-- **🔌 effortless Connection Management**: Simple API to connect, disconnect, and monitor health.
+- **🔌 Effortless Connection Management**: Simple API to connect, disconnect, and monitor health.
 - **🎯 Smart Event Handling**: Auto-cleanup of listeners on disconnect.
 - **🔄 Robust Reconnection**: Configurable strategies (linear/exponential backoff) with hooks.
 - **📛 Namespacing Made Easy**: Organize your events into logical channels (`chat:message`, `game:score`).
 - **⚡ Powerful Utilities**: Multi-emit, multi-listen, throttle, debounce, and specific event waiting.
 - **📦 Offline Queue**: Automatically queue events when disconnected and flush them on reconnect.
+- **🔗 Middleware System**: Intercept and transform events before emit or after receive.
+- **⌨️ Typing Indicators**: Built-in utility for chat "user is typing..." with auto-debounce.
+- **⚛️ React Hooks**: First-class React support with `useSocketEvent`, `useSocketEmit`, `useRoom`, and more.
 - **🐛 Dev-Friendly**: Built-in debug logging and full TypeScript support.
 
 ## 📦 Installation
@@ -166,6 +169,52 @@ client.toRoom('room-123').emit('announcement', 'Welcome!');
 const inRoom = client.isInRoom('room-123'); // true
 ```
 
+### Middleware
+
+Intercept events before they're emitted or after they're received. Perfect for logging, validation, or transformation.
+
+```typescript
+// Log all outgoing events
+client.use('emit', (event, data, next) => {
+    console.log(`Sending: ${event}`, data);
+    next(); // Continue with emit
+});
+
+// Block certain events
+client.use('emit', (event, data, next, abort) => {
+    if (event === 'spam') abort();
+    else next();
+});
+
+// Intercept incoming events
+client.use('receive', (event, data, next) => {
+    console.log(`Received: ${event}`, data);
+    next();
+});
+```
+
+### Typing Indicators
+
+Built-in utility for chat applications with automatic debouncing and timeout.
+
+```typescript
+const typing = client.typing({
+    startEvent: 'typing:start',
+    stopEvent: 'typing:stop',
+    timeout: 3000
+});
+
+// Call when user types
+inputField.addEventListener('input', () => typing.send());
+
+// Track other users typing
+typing.onUserTyping((userId) => showTypingBadge(userId));
+typing.onUserStopped((userId) => hideTypingBadge(userId));
+
+// Check who's typing
+const typingUsers = typing.getTypingUsers();
+```
+
 ## ⚛️ Using with React
 
 Honeydrop provides first-class support for React with powerful hooks that handle lifecycle and cleanup for you.
@@ -219,6 +268,78 @@ function ConnectionBadge() {
     return <span style={{ color: 'red' }}>Offline</span>;
   }
   return <span style={{ color: 'green' }}>Online</span>;
+}
+```
+
+#### useSocketEmit
+Emit events with loading and error state management.
+
+```tsx
+import { useSocketEmit } from 'honeydrop';
+
+function SendMessage() {
+  const { emit, isLoading, error } = useSocketEmit('chat:message');
+
+  const handleSend = async () => {
+    await emit({ text: 'Hello!' });
+  };
+
+  return (
+    <button onClick={handleSend} disabled={isLoading}>
+      {isLoading ? 'Sending...' : 'Send'}
+    </button>
+  );
+}
+```
+
+#### useRoom
+Automatically join/leave rooms with cleanup on unmount.
+
+```tsx
+import { useRoom } from 'honeydrop';
+
+function ChatRoom({ roomId }: { roomId: string }) {
+  const room = useRoom(roomId);
+
+  const sendMessage = () => {
+    room.emit('message', { text: 'Hello room!' });
+  };
+
+  return <button onClick={sendMessage}>Send to Room</button>;
+}
+```
+
+#### useLatency
+Track connection latency and quality.
+
+```tsx
+import { useLatency } from 'honeydrop';
+
+function LatencyIndicator() {
+  const { latency, quality } = useLatency();
+  // quality: 'excellent' | 'good' | 'fair' | 'poor' | 'disconnected'
+
+  return <span>{latency}ms ({quality})</span>;
+}
+```
+
+#### useTypingIndicator
+Manage typing indicators in React.
+
+```tsx
+import { useTypingIndicator } from 'honeydrop';
+
+function ChatInput() {
+  const { sendTyping, typingUsers } = useTypingIndicator();
+
+  return (
+    <div>
+      <input onInput={() => sendTyping()} />
+      {typingUsers.length > 0 && (
+        <span>{typingUsers.join(', ')} typing...</span>
+      )}
+    </div>
+  );
 }
 ```
 
