@@ -11,6 +11,8 @@ import { NamespacedEvents, NamespaceOptions, NamespaceDelimiter } from './Namesp
 import { OfflineQueue, OfflineQueueOptions } from './OfflineQueue';
 import { ConnectionMonitor, ConnectionMonitorOptions, ConnectionQuality } from './ConnectionMonitor';
 import { RoomManager, RoomManagerOptions, RoomEmitter } from './RoomManager';
+import { Middleware, MiddlewareFunction, MiddlewareType } from './Middleware';
+import { TypingIndicator, TypingIndicatorOptions } from './TypingIndicator';
 import {
     emitMultiple,
     emitMultipleWithAck,
@@ -63,6 +65,8 @@ export class Honeydrop {
     private offlineQueue: OfflineQueue;
     private connectionMonitor: ConnectionMonitor;
     private roomManager: RoomManager;
+    private middleware: Middleware;
+    private typingIndicators: Map<string, TypingIndicator> = new Map();
     private namespaces: Map<string, NamespacedEvents> = new Map();
 
     constructor(url: string, options: HoneydropOptions = {}) {
@@ -86,6 +90,9 @@ export class Honeydrop {
 
         // Initialize room manager
         this.roomManager = new RoomManager(this.options.roomManager ?? {}, this.logger);
+
+        // Initialize middleware
+        this.middleware = new Middleware({}, this.logger);
 
         // Initialize reconnection handler if enabled
         if (this.options.reconnection?.enabled !== false) {
@@ -553,5 +560,62 @@ export class Honeydrop {
      */
     isInRoom(room: string): boolean {
         return this.roomManager.isInRoom(room);
+    }
+
+    /**
+     * Register a middleware function
+     * Middleware can intercept and transform events before emit or after receive
+     * @param type - 'emit' for outgoing, 'receive' for incoming events
+     * @param fn - Middleware function receiving (event, data, next, abort)
+     * @param events - Optional array of event names to filter (supports wildcards like 'chat:*')
+     * @returns Unsubscribe function to remove the middleware
+     * 
+     * @example
+     * ```typescript
+     * // Log all outgoing events
+     * client.use('emit', (event, data, next) => {
+     *   console.log(`Outgoing: ${event}`, data);
+     *   next(); // Continue with emit
+     * });
+     * 
+     * // Block certain events
+     * client.use('emit', (event, data, next, abort) => {
+     *   if (event === 'spam') abort();
+     *   else next();
+     * });
+     * ```
+     */
+    use(type: MiddlewareType, fn: MiddlewareFunction, events?: string[]): () => void {
+        return this.middleware.use(type, fn, events);
+    }
+
+    /**
+     * Create a typing indicator manager for chat applications
+     * @param options - Configuration for typing events
+     * @returns TypingIndicator instance
+     * 
+     * @example
+     * ```typescript
+     * const typing = client.typing({ timeout: 3000 });
+     * 
+     * // Call when user types
+     * inputField.addEventListener('input', () => typing.send());
+     * 
+     * // Track other users
+     * typing.onUserTyping((userId) => showTypingBadge(userId));
+     * ```
+     */
+    typing(options: TypingIndicatorOptions = {}): TypingIndicator {
+        const key = JSON.stringify(options);
+
+        if (!this.typingIndicators.has(key)) {
+            const indicator = new TypingIndicator(options, this.logger);
+            if (this.socket) {
+                indicator.setSocket(this.socket);
+            }
+            this.typingIndicators.set(key, indicator);
+        }
+
+        return this.typingIndicators.get(key)!;
     }
 }

@@ -45,6 +45,30 @@ export {
     RoomEmitter
 } from './RoomManager';
 
+// Middleware (NEW)
+export {
+    Middleware,
+    MiddlewareType,
+    MiddlewareFunction,
+    MiddlewareEntry,
+    MiddlewareOptions
+} from './Middleware';
+
+// Typing Indicator (NEW)
+export {
+    TypingIndicator,
+    TypingIndicatorOptions,
+    TypingUser
+} from './TypingIndicator';
+
+// Config (NEW)
+export {
+    loadConfig,
+    generateConfigTemplate,
+    configExists,
+    HoneydropConfig
+} from './config';
+
 // Logging
 export { Logger, LogLevel } from './logger';
 
@@ -72,6 +96,12 @@ export {
 
 export { useSocketEvent } from './react/useSocketEvent';
 export { useSocketStatus, ConnectionStatus } from './react/useSocketStatus';
+
+// New React Hooks (NEW)
+export { useSocketEmit, UseSocketEmitOptions, UseSocketEmitResult } from './react/useSocketEmit';
+export { useRoom, UseRoomResult } from './react/useRoom';
+export { useLatency, UseLatencyResult } from './react/useLatency';
+export { useTypingIndicator, UseTypingIndicatorOptions, UseTypingIndicatorResult } from './react/useTypingIndicator';
 
 // Default export
 import { Honeydrop } from './Honeydrop';
