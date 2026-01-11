@@ -373,9 +373,7 @@ npm start
 
 ## 📄 License
 
-MIT License © 2024 Neeraj
-
-<br>
+MIT License © 2026<br>
 
 <p align="center">
   Made with ❤️ by <a href="https://github.com/neeer4j">neeer4j</a>
