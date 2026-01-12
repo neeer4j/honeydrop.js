@@ -34,15 +34,18 @@ export function useLatency(): UseLatencyResult {
         // Poll for updates (since ConnectionMonitor doesn't expose quality change events through Honeydrop)
         const interval = setInterval(updateLatency, 5000);
 
-        client.on('connect', updateLatency);
-        client.on('disconnect', () => {
+        const handleDisconnect = () => {
             setLatency(0);
             setQuality('disconnected');
-        });
+        };
+
+        client.on('connect', updateLatency);
+        client.on('disconnect', handleDisconnect);
 
         return () => {
             clearInterval(interval);
             client.off('connect', updateLatency);
+            client.off('disconnect', handleDisconnect);
         };
     }, [client]);
 
