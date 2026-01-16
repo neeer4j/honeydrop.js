@@ -102,6 +102,7 @@ export { useSocketEmit, UseSocketEmitOptions, UseSocketEmitResult } from './reac
 export { useRoom, UseRoomResult } from './react/useRoom';
 export { useLatency, UseLatencyResult } from './react/useLatency';
 export { useTypingIndicator, UseTypingIndicatorOptions, UseTypingIndicatorResult } from './react/useTypingIndicator';
+export { useOnlineStatus, UseOnlineStatusResult } from './react/useOnlineStatus';
 
 // Default export
 import { Honeydrop } from './Honeydrop';
