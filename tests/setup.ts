@@ -1,6 +1,6 @@
 
 // Mock Socket.IO client class for Tesht
-import { fn } from 'tesht.js';
+import { fn } from './test-utils';
 
 export class MockSocket {
     public id: string = 'mock-socket-id';

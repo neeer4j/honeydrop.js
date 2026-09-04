@@ -1,6 +1,7 @@
 import { OfflineQueue } from '../src/OfflineQueue';
 import { MockSocket, MockLogger } from './setup';
-import { test, expect, beforeEach } from 'tesht.js';
+import { test, beforeEach } from 'tesht.js';
+import { expect } from './test-utils';
 
 
 describe('OfflineQueue', () => {

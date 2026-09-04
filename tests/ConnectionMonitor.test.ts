@@ -1,6 +1,7 @@
 import { ConnectionMonitor } from '../src/ConnectionMonitor';
 import { MockSocket, MockLogger } from './setup';
-import { test, expect, fn, spyOn } from 'tesht.js';
+import { test } from 'tesht.js';
+import { expect, fn, spyOn } from './test-utils';
 
 // Shim jest timers for now or just mock them if possible
 // Since tesht doesn't have fake timers yet, we will mock setTimeout/clearTimeout for this specific test

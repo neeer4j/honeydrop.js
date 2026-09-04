@@ -1,6 +1,7 @@
 import { RoomManager } from '../src/RoomManager';
 import { MockSocket, MockLogger } from './setup';
-import { test, expect, beforeEach } from 'tesht.js';
+import { test, beforeEach } from 'tesht.js';
+import { expect } from './test-utils';
 
 describe('RoomManager', () => {
     let manager: RoomManager;

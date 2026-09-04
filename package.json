@@ -1,6 +1,7 @@
 {
   "name": "honeydrop",
   "version": "1.1.1",
+  "type": "module",
   "description": "A lightweight, developer-friendly helper library for Socket.IO applications",
   "main": "dist/honeydrop.cjs.js",
   "module": "dist/honeydrop.esm.js",
@@ -22,7 +23,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "test": "npx tsx node_modules/tesht.js/bin/tesht.js tests/",
+    "test": "npx tsx node_modules/tesht.js/bin/tesht.js tests/all.test.js",
     "test:watch": "npx tsx node_modules/tesht.js/bin/tesht.js tests/ --watch",
     "prepublishOnly": "npm run build",
     "demo": "cd demo && npm start"

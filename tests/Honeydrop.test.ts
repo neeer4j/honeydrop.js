@@ -1,7 +1,8 @@
 
 import { Honeydrop } from '../src/Honeydrop';
 import { MockSocket } from './setup';
-import { test, expect, fn, spyOn, beforeEach } from 'tesht.js';
+import { test, beforeEach } from 'tesht.js';
+import { expect, fn, spyOn } from './test-utils';
 
 // Since we cannot mock modules like jest.mock('socket.io-client'),
 // we have to trust that Honeydrop accepts a custom socket or we can monkey-patch imports if using a bundler (hard).
